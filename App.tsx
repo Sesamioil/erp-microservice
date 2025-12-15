@@ -13,20 +13,22 @@ const App: React.FC = () => {
   const [style, setStyle] = useState<TranslationStyle>('default');
   const [error, setError] = useState<string | null>(null);
 
+  // Active Context Tab: 'none' | 'relations' | 'glossary'
+  const [activeTab, setActiveTab] = useState<'none' | 'relations' | 'glossary'>('none');
+
   // Relationship State
   const [relationships, setRelationships] = useState<Relationship[]>([]);
-  const [showRelations, setShowRelations] = useState<boolean>(false);
   const [newRelSource, setNewRelSource] = useState('');
   const [newRelRelation, setNewRelRelation] = useState('');
   const [newRelTarget, setNewRelTarget] = useState('');
 
   // Glossary State
   const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
-  const [showGlossary, setShowGlossary] = useState<boolean>(false);
   const [newTermSource, setNewTermSource] = useState('');
   const [newTermTarget, setNewTermTarget] = useState('');
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const glossaryFileInputRef = useRef<HTMLInputElement>(null);
+  const relationshipFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleTranslate = useCallback(async () => {
     if (!inputText.trim()) return;
@@ -71,6 +73,37 @@ const App: React.FC = () => {
     setRelationships(relationships.filter(r => r.id !== id));
   };
 
+  const handleRelationshipFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (!content) return;
+      const lines = content.split(/\r?\n/);
+      const newRels: Relationship[] = [];
+      lines.forEach((line, index) => {
+        if (!line.trim()) return;
+        let parts = line.includes('|') ? line.split('|') : line.split(',');
+        if (parts.length >= 3) {
+           const source = parts[0].trim();
+           const relation = parts[1].trim();
+           const target = parts.slice(2).join(line.includes('|') ? '|' : ',').trim();
+           if (source && relation && target) {
+             newRels.push({
+               id: `${Date.now()}-rel-${index}-${Math.random().toString(36).substring(2, 9)}`,
+               source, relation, target
+             });
+           }
+        }
+      });
+      if (newRels.length > 0) setRelationships(prev => [...prev, ...newRels]);
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   // Glossary Handlers
   const addGlossaryTerm = () => {
     if (!newTermSource.trim() || !newTermTarget.trim()) return;
@@ -87,357 +120,279 @@ const App: React.FC = () => {
     setGlossary(glossary.filter(g => g.id !== id));
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGlossaryFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
       if (!content) return;
-
       const lines = content.split(/\r?\n/);
       const newTerms: GlossaryTerm[] = [];
-      
       lines.forEach((line, index) => {
         if (!line.trim()) return;
-        // Support "=" or ":" as separator
         let separatorIndex = line.indexOf('=');
         if (separatorIndex === -1) separatorIndex = line.indexOf(':');
-        
         if (separatorIndex !== -1) {
           const source = line.substring(0, separatorIndex).trim();
           const target = line.substring(separatorIndex + 1).trim();
-          
           if (source && target) {
              newTerms.push({
                id: `${Date.now()}-${index}-${Math.random().toString(36).substring(2, 9)}`,
-               source,
-               target
+               source, target
              });
           }
         }
       });
-
-      if (newTerms.length > 0) {
-        setGlossary(prev => [...prev, ...newTerms]);
-      }
+      if (newTerms.length > 0) setGlossary(prev => [...prev, ...newTerms]);
     };
     reader.readAsText(file);
-    // Reset input value to allow re-uploading the same file if needed
     event.target.value = '';
   };
 
+  const toggleTab = (tab: 'relations' | 'glossary') => {
+    setActiveTab(activeTab === tab ? 'none' : tab);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-gray-900 font-sans">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-brand-200">
-              LN
-            </div>
-            <h1 className="text-xl font-bold text-slate-800 tracking-tight">Pro Translator <span className="text-xs font-normal text-gray-500 ml-2 px-2 py-0.5 bg-gray-100 rounded-full border border-gray-200">Powered by Gemini 2.5 Pro</span></h1>
+    <div className="h-screen flex flex-col bg-zinc-50 text-gray-900 font-sans overflow-hidden">
+      
+      {/* 1. Slim App Header */}
+      <header className="flex-none bg-white border-b border-gray-200 z-20 px-4 h-14 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-brand-600 rounded-md flex items-center justify-center text-white font-bold shadow-md shadow-brand-200">
+            LN
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setViewMode(ViewMode.Split)} 
-              className={`p-2 rounded-md transition-colors ${viewMode === ViewMode.Split ? 'bg-brand-50 text-brand-600' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Split View"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2-2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-              </svg>
-            </button>
-             <button 
-              onClick={() => setViewMode(ViewMode.Focus)} 
-              className={`p-2 rounded-md transition-colors ${viewMode === ViewMode.Focus ? 'bg-brand-50 text-brand-600' : 'text-gray-400 hover:text-gray-600'}`}
-              title="Focus View (Output Only)"
-            >
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-               </svg>
-            </button>
+          <div>
+            <h1 className="text-sm font-bold text-gray-800 leading-tight">Pro Translator</h1>
+            <p className="text-[10px] text-gray-400 font-medium">Gemini 2.5 Pro Engine</p>
           </div>
+        </div>
+
+        {/* View Mode Toggles - Compact Segmented Control */}
+        <div className="flex bg-gray-100 p-1 rounded-lg">
+          <button 
+            onClick={() => setViewMode(ViewMode.Split)} 
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${viewMode === ViewMode.Split ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Split
+          </button>
+          <button 
+            onClick={() => setViewMode(ViewMode.Focus)} 
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${viewMode === ViewMode.Focus ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Focus
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full flex flex-col gap-6">
+      {/* 2. Control Toolbar (Context & Actions) */}
+      <div className="flex-none bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between gap-4 overflow-x-auto">
         
-        {/* Controls */}
-        <div className="flex flex-col gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition-all">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Style Selector */}
-              <div className="relative inline-block text-left min-w-[160px]">
-                  <select
-                    value={style}
-                    onChange={(e) => setStyle(e.target.value as TranslationStyle)}
-                    className="block w-full rounded-lg border-gray-300 bg-gray-50 text-gray-700 py-2.5 pl-3 pr-10 text-sm font-medium focus:border-brand-500 focus:ring-brand-500 border hover:bg-gray-100 transition-colors cursor-pointer appearance-none"
-                  >
-                    <option value="default">Auto-detect Style</option>
-                    <option value="fantasy">✨ Fantasy / Isekai</option>
-                    <option value="slice_of_life">☕ Slice of Life</option>
-                    <option value="action">⚔️ Action / Combat</option>
-                    <option value="mystery">🕵️ Mystery / Horror</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+        {/* Left: Context Controls */}
+        <div className="flex items-center gap-3">
+          {/* Style Selector */}
+          <div className="relative">
+             <select
+                value={style}
+                onChange={(e) => setStyle(e.target.value as TranslationStyle)}
+                className="appearance-none bg-gray-50 border border-gray-200 text-gray-700 text-xs font-medium rounded-md py-1.5 pl-3 pr-8 hover:bg-gray-100 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors cursor-pointer min-w-[140px]"
+              >
+                <option value="default">Style: Auto</option>
+                <option value="fantasy">✨ Fantasy</option>
+                <option value="slice_of_life">☕ Slice of Life</option>
+                <option value="action">⚔️ Action</option>
+                <option value="mystery">🕵️ Mystery</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
               </div>
+          </div>
 
-              {/* Relationship Toggle */}
-              <button
-                onClick={() => { setShowRelations(!showRelations); setShowGlossary(false); }}
-                className={`flex items-center space-x-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${showRelations ? 'bg-brand-50 border-brand-200 text-brand-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span>Relations {relationships.length > 0 && `(${relationships.length})`}</span>
-              </button>
+          <div className="h-4 w-px bg-gray-200 mx-1"></div>
 
-               {/* Glossary Toggle */}
-               <button
-                onClick={() => { setShowGlossary(!showGlossary); setShowRelations(false); }}
-                className={`flex items-center space-x-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${showGlossary ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-                <span>Dictionary {glossary.length > 0 && `(${glossary.length})`}</span>
-              </button>
+          {/* Relationships Toggle */}
+          <button 
+            onClick={() => toggleTab('relations')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors border ${
+              activeTab === 'relations' 
+              ? 'bg-brand-50 border-brand-200 text-brand-700' 
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            Relations
+            {relationships.length > 0 && <span className="bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded-full text-[9px]">{relationships.length}</span>}
+          </button>
 
-              <div className="w-px h-8 bg-gray-200 mx-1 hidden sm:block"></div>
+          {/* Glossary Toggle */}
+          <button 
+            onClick={() => toggleTab('glossary')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors border ${
+              activeTab === 'glossary' 
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+            }`}
+          >
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+            Dictionary
+            {glossary.length > 0 && <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[9px]">{glossary.length}</span>}
+          </button>
+        </div>
 
-              <Button onClick={handleTranslate} isLoading={isLoading} disabled={!inputText}>
-                Translate
-              </Button>
-              <Button variant="ghost" onClick={handleClear} disabled={isLoading || (!inputText && !outputText)}>
-                Clear
-              </Button>
-            </div>
-            
-            {!inputText && (
-              <button onClick={handleLoadExample} className="text-sm text-brand-600 hover:text-brand-800 underline px-2">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+           {!inputText && (
+              <button onClick={handleLoadExample} className="text-xs text-brand-600 hover:text-brand-800 underline mr-2">
                 Load Example
               </button>
             )}
-          </div>
-
-          {/* Relationship Editor Panel */}
-          {showRelations && (
-            <div className="pt-4 mt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <span className="bg-brand-100 text-brand-700 p-1 rounded mr-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </span>
-                  Define Character Relationships
-                  <span className="ml-2 text-xs font-normal text-gray-500">(These rules will override default translations)</span>
-                </h3>
-                
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                  <input 
-                    type="text" 
-                    placeholder="Subject (e.g. Elara)" 
-                    value={newRelSource}
-                    onChange={(e) => setNewRelSource(e.target.value)}
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2"
-                  />
-                  <div className="flex items-center justify-center text-gray-400 text-sm font-medium px-1">is</div>
-                  <input 
-                    type="text" 
-                    placeholder="Relation (e.g. older sister)" 
-                    value={newRelRelation}
-                    onChange={(e) => setNewRelRelation(e.target.value)}
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2"
-                  />
-                  <div className="flex items-center justify-center text-gray-400 text-sm font-medium px-1">of</div>
-                  <input 
-                    type="text" 
-                    placeholder="Target (e.g. Kael)" 
-                    value={newRelTarget}
-                    onChange={(e) => setNewRelTarget(e.target.value)}
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm px-3 py-2"
-                  />
-                  <button 
-                    onClick={addRelationship}
-                    disabled={!newRelSource || !newRelRelation || !newRelTarget}
-                    className="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Add Rule
-                  </button>
-                </div>
-
-                {relationships.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {relationships.map((rel) => (
-                      <div key={rel.id} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-gray-200 text-sm shadow-sm group">
-                        <span className="truncate">
-                          <span className="font-semibold text-brand-700">{rel.source}</span>
-                          <span className="text-gray-400 mx-1">→</span>
-                          <span className="text-gray-600 italic">{rel.relation}</span>
-                          <span className="text-gray-400 mx-1">→</span>
-                          <span className="font-semibold text-brand-700">{rel.target}</span>
-                        </span>
-                        <button 
-                          onClick={() => removeRelationship(rel.id)}
-                          className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 text-center italic mt-2">No custom relationships added yet.</p>
-                )}
-              </div>
-            </div>
-          )}
-
-           {/* Glossary Editor Panel */}
-           {showGlossary && (
-            <div className="pt-4 mt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-indigo-900 flex items-center">
-                    <span className="bg-indigo-100 text-indigo-700 p-1 rounded mr-2">
-                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" clipRule="evenodd" />
-                      </svg>
-                    </span>
-                    Dictionary & Term Replacement
-                    <span className="ml-2 text-xs font-normal text-indigo-500 hidden sm:inline">(Auto-replaces original terms)</span>
-                  </h3>
-                  
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    accept=".txt"
-                  />
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center space-x-1 text-xs bg-white border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded hover:bg-indigo-50 shadow-sm transition-colors"
-                    title="Import .txt file (Format: Original = Replacement)"
-                  >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    <span>Import .txt</span>
-                  </button>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                  <input 
-                    type="text" 
-                    placeholder="Original Term (e.g. Fireball)" 
-                    value={newTermSource}
-                    onChange={(e) => setNewTermSource(e.target.value)}
-                    className="flex-1 rounded-md border-indigo-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
-                  />
-                  <div className="flex items-center justify-center text-indigo-400 text-sm font-medium px-1">=</div>
-                  <input 
-                    type="text" 
-                    placeholder="Vietnamese Replacement (e.g. Hỏa Cầu)" 
-                    value={newTermTarget}
-                    onChange={(e) => setNewTermTarget(e.target.value)}
-                    className="flex-1 rounded-md border-indigo-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
-                  />
-                  <button 
-                    onClick={addGlossaryTerm}
-                    disabled={!newTermSource || !newTermTarget}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Add Term
-                  </button>
-                </div>
-
-                {glossary.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {glossary.map((term) => (
-                      <div key={term.id} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-indigo-100 text-sm shadow-sm group">
-                        <span className="truncate">
-                          <span className="font-semibold text-gray-800">{term.source}</span>
-                          <span className="text-indigo-300 mx-2">=</span>
-                          <span className="font-semibold text-indigo-700">{term.target}</span>
-                        </span>
-                        <button 
-                          onClick={() => removeGlossaryTerm(term.id)}
-                          className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-indigo-400 text-center italic mt-2">No dictionary terms added yet.</p>
-                )}
-              </div>
-            </div>
-          )}
+           <Button variant="ghost" size="sm" onClick={handleClear} disabled={isLoading || (!inputText && !outputText)}>
+            Clear
+          </Button>
+          <Button 
+            onClick={handleTranslate} 
+            isLoading={isLoading} 
+            disabled={!inputText}
+            size="sm"
+            className="min-w-[100px]"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+              </svg>
+            }
+          >
+            Translate
+          </Button>
         </div>
+      </div>
 
-        {/* Error Message */}
+      {/* 3. Sliding Context Panel (Relations / Glossary) */}
+      <div className={`flex-none bg-gray-50 border-b border-gray-200 overflow-hidden transition-all duration-300 ease-in-out ${activeTab !== 'none' ? 'max-h-[300px]' : 'max-h-0'}`}>
+        <div className="p-4 overflow-y-auto max-h-[300px]">
+          
+          {/* Relations Panel Content */}
+          {activeTab === 'relations' && (
+             <div className="max-w-4xl mx-auto">
+               <div className="flex items-center justify-between mb-3">
+                 <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Character Relationships</h3>
+                 <div className="flex items-center gap-2">
+                    <input type="file" ref={relationshipFileInputRef} onChange={handleRelationshipFileUpload} className="hidden" accept=".txt" />
+                    <button onClick={() => relationshipFileInputRef.current?.click()} className="text-[10px] text-brand-600 hover:text-brand-800 flex items-center gap-1 hover:underline">
+                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                       Import .txt
+                    </button>
+                 </div>
+               </div>
+
+               <div className="flex gap-2 mb-3">
+                  <input type="text" placeholder="Subject (A)" value={newRelSource} onChange={(e) => setNewRelSource(e.target.value)} className="flex-1 rounded border-gray-300 text-xs py-1.5 px-2 focus:ring-1 focus:ring-brand-500" />
+                  <span className="text-gray-400 self-center text-xs">is</span>
+                  <input type="text" placeholder="Relation" value={newRelRelation} onChange={(e) => setNewRelRelation(e.target.value)} className="flex-1 rounded border-gray-300 text-xs py-1.5 px-2 focus:ring-1 focus:ring-brand-500" />
+                  <span className="text-gray-400 self-center text-xs">of</span>
+                  <input type="text" placeholder="Target (B)" value={newRelTarget} onChange={(e) => setNewRelTarget(e.target.value)} className="flex-1 rounded border-gray-300 text-xs py-1.5 px-2 focus:ring-1 focus:ring-brand-500" />
+                  <button onClick={addRelationship} disabled={!newRelSource || !newRelRelation || !newRelTarget} className="bg-brand-600 text-white rounded px-3 py-1 text-xs font-medium hover:bg-brand-700 disabled:opacity-50">Add</button>
+               </div>
+
+               {relationships.length > 0 && (
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                   {relationships.map(rel => (
+                     <div key={rel.id} className="bg-white border border-gray-200 rounded px-2 py-1.5 flex items-center justify-between group">
+                       <div className="text-xs truncate text-gray-700">
+                         <span className="font-semibold text-brand-700">{rel.source}</span>
+                         <span className="text-gray-400 mx-1">→</span>
+                         <span className="italic">{rel.relation}</span>
+                         <span className="text-gray-400 mx-1">→</span>
+                         <span className="font-semibold text-brand-700">{rel.target}</span>
+                       </div>
+                       <button onClick={() => removeRelationship(rel.id)} className="text-gray-300 hover:text-red-500 ml-2"><svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+          )}
+
+          {/* Glossary Panel Content */}
+          {activeTab === 'glossary' && (
+             <div className="max-w-4xl mx-auto">
+               <div className="flex items-center justify-between mb-3">
+                 <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Dictionary Replacement</h3>
+                 <div className="flex items-center gap-2">
+                    <input type="file" ref={glossaryFileInputRef} onChange={handleGlossaryFileUpload} className="hidden" accept=".txt" />
+                    <button onClick={() => glossaryFileInputRef.current?.click()} className="text-[10px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline">
+                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                       Import .txt
+                    </button>
+                 </div>
+               </div>
+
+               <div className="flex gap-2 mb-3">
+                  <input type="text" placeholder="Original Term" value={newTermSource} onChange={(e) => setNewTermSource(e.target.value)} className="flex-1 rounded border-gray-300 text-xs py-1.5 px-2 focus:ring-1 focus:ring-indigo-500" />
+                  <span className="text-gray-400 self-center text-xs">=</span>
+                  <input type="text" placeholder="Vietnamese Replacement" value={newTermTarget} onChange={(e) => setNewTermTarget(e.target.value)} className="flex-1 rounded border-gray-300 text-xs py-1.5 px-2 focus:ring-1 focus:ring-indigo-500" />
+                  <button onClick={addGlossaryTerm} disabled={!newTermSource || !newTermTarget} className="bg-indigo-600 text-white rounded px-3 py-1 text-xs font-medium hover:bg-indigo-700 disabled:opacity-50">Add</button>
+               </div>
+
+               {glossary.length > 0 && (
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                   {glossary.map(term => (
+                     <div key={term.id} className="bg-white border border-gray-200 rounded px-2 py-1.5 flex items-center justify-between group">
+                       <div className="text-xs truncate text-gray-700">
+                         <span className="font-semibold">{term.source}</span>
+                         <span className="text-gray-400 mx-1">=</span>
+                         <span className="font-semibold text-indigo-700">{term.target}</span>
+                       </div>
+                       <button onClick={() => removeGlossaryTerm(term.id)} className="text-gray-300 hover:text-red-500 ml-2"><svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+                     </div>
+                   ))}
+                 </div>
+               )}
+             </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* 4. Main Editor Grid (Fills remaining height) */}
+      <main className="flex-grow overflow-hidden relative p-4">
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30 bg-red-50 text-red-700 px-4 py-2 rounded-full shadow-lg border border-red-200 text-xs font-medium flex items-center animate-in fade-in slide-in-from-top-2">
+            <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+            {error}
           </div>
         )}
 
-        {/* Editor Area */}
-        <div className={`flex-grow grid gap-6 ${viewMode === ViewMode.Split ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
-          {/* Input Panel */}
-          {(viewMode === ViewMode.Split || !outputText) && (
-            <div className={`flex flex-col h-[600px] lg:h-[calc(100vh-320px)] ${viewMode === ViewMode.Focus ? 'hidden' : ''}`}>
-               <EditorPane 
-                label="English Source (HTML/Text)" 
-                value={inputText} 
-                onChange={setInputText}
-                placeholder="Paste your Light Novel / Web Novel text here..."
-               />
-            </div>
-          )}
+        <div className={`h-full grid gap-4 transition-all duration-300 ${viewMode === ViewMode.Split ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 max-w-4xl mx-auto'}`}>
+          {/* Input Source */}
+          <div className={`h-full flex flex-col transition-all duration-300 ${viewMode === ViewMode.Focus ? 'hidden' : ''}`}>
+             <EditorPane 
+              label="Source Text" 
+              value={inputText} 
+              onChange={setInputText}
+              placeholder="Paste your source text here..."
+              isHtml={true}
+              className="h-full"
+             />
+          </div>
 
-          {/* Output Panel */}
-          {(viewMode === ViewMode.Split || outputText) && (
-             <div className="flex flex-col h-[600px] lg:h-[calc(100vh-320px)]">
-              <EditorPane 
-                label="Vietnamese Translation" 
-                value={outputText} 
-                readOnly
-                placeholder="Translation will appear here..."
-              />
-            </div>
-          )}
-        </div>
-        
-        {/* Helper Note */}
-        <div className="text-center text-sm text-gray-400 pb-4">
-          Strictly adhering to name preservation, HTML structure, and character relationships rules.
+          {/* Output Translation */}
+          <div className="h-full flex flex-col">
+            <EditorPane 
+              label="Translation" 
+              value={outputText} 
+              readOnly
+              placeholder={isLoading ? "Translating..." : "Translation will appear here..."}
+              isHtml={true}
+              className={`h-full ${isLoading ? 'animate-pulse' : ''}`}
+            />
+          </div>
         </div>
       </main>
     </div>
