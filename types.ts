@@ -13,3 +13,10 @@ export enum ViewMode {
 }
 
 export type TranslationStyle = 'default' | 'fantasy' | 'slice_of_life' | 'action' | 'mystery';
+
+export interface Relationship {
+  id: string;
+  source: string;
+  relation: string;
+  target: string;
+}

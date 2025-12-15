@@ -1,13 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
-import { TranslationStyle } from "../types";
+import { TranslationStyle, Relationship } from "../types";
 
 const apiKey = process.env.API_KEY;
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
-export const translateText = async (text: string, style: TranslationStyle = 'default'): Promise<string> => {
+export const translateText = async (
+  text: string, 
+  style: TranslationStyle = 'default',
+  relationships: Relationship[] = []
+): Promise<string> => {
   if (!text || !text.trim()) return "";
 
   let styleInstruction = "";
@@ -28,8 +32,19 @@ export const translateText = async (text: string, style: TranslationStyle = 'def
       styleInstruction = ""; // Default: Auto-detect based on System Instruction Rule 5
   }
 
-  // Append the specific style requirement to the user input to enforce it for this request
-  const finalContent = styleInstruction ? `${text}\n\n[${styleInstruction}]` : text;
+  // Construct relationship instruction
+  let relationshipInstruction = "";
+  if (relationships.length > 0) {
+    const rules = relationships.map(r => `- ${r.source} là ${r.relation} của ${r.target}`).join("\n");
+    relationshipInstruction = `QUY TẮC QUAN HỆ NHÂN VẬT (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):\n${rules}`;
+  }
+
+  // Combine instructions
+  const parts = [text];
+  if (styleInstruction) parts.push(`[${styleInstruction}]`);
+  if (relationshipInstruction) parts.push(`[${relationshipInstruction}]`);
+
+  const finalContent = parts.join("\n\n");
 
   try {
     const response = await ai.models.generateContent({
