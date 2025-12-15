@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { EditorPane } from './components/EditorPane';
 import { Button } from './components/Button';
 import { translateText } from './services/geminiService';
 import { PLACEHOLDER_TEXT } from './constants';
-import { ViewMode, TranslationStyle, Relationship } from './types';
+import { ViewMode, TranslationStyle, Relationship, GlossaryTerm } from './types';
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
@@ -20,13 +20,21 @@ const App: React.FC = () => {
   const [newRelRelation, setNewRelRelation] = useState('');
   const [newRelTarget, setNewRelTarget] = useState('');
 
+  // Glossary State
+  const [glossary, setGlossary] = useState<GlossaryTerm[]>([]);
+  const [showGlossary, setShowGlossary] = useState<boolean>(false);
+  const [newTermSource, setNewTermSource] = useState('');
+  const [newTermTarget, setNewTermTarget] = useState('');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleTranslate = useCallback(async () => {
     if (!inputText.trim()) return;
 
     setIsLoading(true);
     setError(null);
     try {
-      const result = await translateText(inputText, style, relationships);
+      const result = await translateText(inputText, style, relationships, glossary);
       setOutputText(result);
     } catch (err) {
       setError("An error occurred while communicating with the translation engine. Please try again.");
@@ -34,7 +42,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, style, relationships]);
+  }, [inputText, style, relationships, glossary]);
 
   const handleClear = () => {
     setInputText('');
@@ -46,24 +54,78 @@ const App: React.FC = () => {
     setInputText(PLACEHOLDER_TEXT);
   };
 
+  // Relationship Handlers
   const addRelationship = () => {
     if (!newRelSource.trim() || !newRelRelation.trim() || !newRelTarget.trim()) return;
-    
     const newRel: Relationship = {
       id: Date.now().toString(),
       source: newRelSource.trim(),
       relation: newRelRelation.trim(),
       target: newRelTarget.trim()
     };
-    
     setRelationships([...relationships, newRel]);
-    setNewRelSource('');
-    setNewRelRelation('');
-    setNewRelTarget('');
+    setNewRelSource(''); setNewRelRelation(''); setNewRelTarget('');
   };
 
   const removeRelationship = (id: string) => {
     setRelationships(relationships.filter(r => r.id !== id));
+  };
+
+  // Glossary Handlers
+  const addGlossaryTerm = () => {
+    if (!newTermSource.trim() || !newTermTarget.trim()) return;
+    const newTerm: GlossaryTerm = {
+      id: Date.now().toString(),
+      source: newTermSource.trim(),
+      target: newTermTarget.trim()
+    };
+    setGlossary([...glossary, newTerm]);
+    setNewTermSource(''); setNewTermTarget('');
+  };
+
+  const removeGlossaryTerm = (id: string) => {
+    setGlossary(glossary.filter(g => g.id !== id));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      if (!content) return;
+
+      const lines = content.split(/\r?\n/);
+      const newTerms: GlossaryTerm[] = [];
+      
+      lines.forEach((line, index) => {
+        if (!line.trim()) return;
+        // Support "=" or ":" as separator
+        let separatorIndex = line.indexOf('=');
+        if (separatorIndex === -1) separatorIndex = line.indexOf(':');
+        
+        if (separatorIndex !== -1) {
+          const source = line.substring(0, separatorIndex).trim();
+          const target = line.substring(separatorIndex + 1).trim();
+          
+          if (source && target) {
+             newTerms.push({
+               id: `${Date.now()}-${index}-${Math.random().toString(36).substring(2, 9)}`,
+               source,
+               target
+             });
+          }
+        }
+      });
+
+      if (newTerms.length > 0) {
+        setGlossary(prev => [...prev, ...newTerms]);
+      }
+    };
+    reader.readAsText(file);
+    // Reset input value to allow re-uploading the same file if needed
+    event.target.value = '';
   };
 
   return (
@@ -126,17 +188,28 @@ const App: React.FC = () => {
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </div>
-                </div>
+              </div>
 
               {/* Relationship Toggle */}
               <button
-                onClick={() => setShowRelations(!showRelations)}
+                onClick={() => { setShowRelations(!showRelations); setShowGlossary(false); }}
                 className={`flex items-center space-x-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${showRelations ? 'bg-brand-50 border-brand-200 text-brand-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                <span>Relationships {relationships.length > 0 && `(${relationships.length})`}</span>
+                <span>Relations {relationships.length > 0 && `(${relationships.length})`}</span>
+              </button>
+
+               {/* Glossary Toggle */}
+               <button
+                onClick={() => { setShowGlossary(!showGlossary); setShowRelations(false); }}
+                className={`flex items-center space-x-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${showGlossary ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+                <span>Dictionary {glossary.length > 0 && `(${glossary.length})`}</span>
               </button>
 
               <div className="w-px h-8 bg-gray-200 mx-1 hidden sm:block"></div>
@@ -227,6 +300,92 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-xs text-gray-400 text-center italic mt-2">No custom relationships added yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+           {/* Glossary Editor Panel */}
+           {showGlossary && (
+            <div className="pt-4 mt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-indigo-900 flex items-center">
+                    <span className="bg-indigo-100 text-indigo-700 p-1 rounded mr-2">
+                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                    Dictionary & Term Replacement
+                    <span className="ml-2 text-xs font-normal text-indigo-500 hidden sm:inline">(Auto-replaces original terms)</span>
+                  </h3>
+                  
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept=".txt"
+                  />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center space-x-1 text-xs bg-white border border-indigo-200 text-indigo-700 px-3 py-1.5 rounded hover:bg-indigo-50 shadow-sm transition-colors"
+                    title="Import .txt file (Format: Original = Replacement)"
+                  >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Import .txt</span>
+                  </button>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                  <input 
+                    type="text" 
+                    placeholder="Original Term (e.g. Fireball)" 
+                    value={newTermSource}
+                    onChange={(e) => setNewTermSource(e.target.value)}
+                    className="flex-1 rounded-md border-indigo-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
+                  />
+                  <div className="flex items-center justify-center text-indigo-400 text-sm font-medium px-1">=</div>
+                  <input 
+                    type="text" 
+                    placeholder="Vietnamese Replacement (e.g. Hỏa Cầu)" 
+                    value={newTermTarget}
+                    onChange={(e) => setNewTermTarget(e.target.value)}
+                    className="flex-1 rounded-md border-indigo-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
+                  />
+                  <button 
+                    onClick={addGlossaryTerm}
+                    disabled={!newTermSource || !newTermTarget}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Add Term
+                  </button>
+                </div>
+
+                {glossary.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {glossary.map((term) => (
+                      <div key={term.id} className="flex items-center justify-between bg-white px-3 py-2 rounded border border-indigo-100 text-sm shadow-sm group">
+                        <span className="truncate">
+                          <span className="font-semibold text-gray-800">{term.source}</span>
+                          <span className="text-indigo-300 mx-2">=</span>
+                          <span className="font-semibold text-indigo-700">{term.target}</span>
+                        </span>
+                        <button 
+                          onClick={() => removeGlossaryTerm(term.id)}
+                          className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-indigo-400 text-center italic mt-2">No dictionary terms added yet.</p>
                 )}
               </div>
             </div>

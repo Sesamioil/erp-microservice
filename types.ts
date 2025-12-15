@@ -20,3 +20,9 @@ export interface Relationship {
   relation: string;
   target: string;
 }
+
+export interface GlossaryTerm {
+  id: string;
+  source: string;
+  target: string;
+}

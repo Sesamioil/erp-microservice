@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
-import { TranslationStyle, Relationship } from "../types";
+import { TranslationStyle, Relationship, GlossaryTerm } from "../types";
 
 const apiKey = process.env.API_KEY;
 
@@ -10,7 +10,8 @@ const ai = new GoogleGenAI({ apiKey: apiKey });
 export const translateText = async (
   text: string, 
   style: TranslationStyle = 'default',
-  relationships: Relationship[] = []
+  relationships: Relationship[] = [],
+  glossary: GlossaryTerm[] = []
 ): Promise<string> => {
   if (!text || !text.trim()) return "";
 
@@ -39,10 +40,18 @@ export const translateText = async (
     relationshipInstruction = `QUY TẮC QUAN HỆ NHÂN VẬT (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):\n${rules}`;
   }
 
+  // Construct glossary instruction
+  let glossaryInstruction = "";
+  if (glossary.length > 0) {
+    const terms = glossary.map(g => `- ${g.source} = ${g.target}`).join("\n");
+    glossaryInstruction = `TỪ ĐIỂN THUẬT NGỮ / TÊN RIÊNG (BẮT BUỘC DÙNG CÁC TỪ TIẾNG VIỆT SAU ĐÂY THAY CHO TỪ GỐC, BỎ QUA QUY TẮC 1 VỚI NHỮNG TỪ NÀY):\n${terms}`;
+  }
+
   // Combine instructions
   const parts = [text];
   if (styleInstruction) parts.push(`[${styleInstruction}]`);
   if (relationshipInstruction) parts.push(`[${relationshipInstruction}]`);
+  if (glossaryInstruction) parts.push(`[${glossaryInstruction}]`);
 
   const finalContent = parts.join("\n\n");
 
