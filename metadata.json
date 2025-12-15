@@ -1,0 +1,5 @@
+{
+  "name": "LN/WN Pro Translator",
+  "description": "A specialized translation tool for Light Novels and Web Novels, optimized for accurate terminology, character relationships, and HTML structure preservation using Gemini Pro.",
+  "requestFramePermissions": []
+}
