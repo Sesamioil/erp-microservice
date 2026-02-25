@@ -3,7 +3,7 @@ import { EditorPane } from './components/EditorPane';
 import { Button } from './components/Button';
 import { translateText } from './services/geminiService';
 import { PLACEHOLDER_TEXT } from './constants';
-import { ViewMode, TranslationStyle, Relationship, GlossaryTerm } from './types';
+import { ViewMode, TranslationStyle, Relationship, GlossaryTerm, ModelType } from './types';
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Split);
   const [style, setStyle] = useState<TranslationStyle>('default');
+  const [model, setModel] = useState<ModelType>('gemini-3-pro-preview');
   const [error, setError] = useState<string | null>(null);
 
   // Active Context Tab: 'none' | 'relations' | 'glossary'
@@ -36,7 +37,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await translateText(inputText, style, relationships, glossary);
+      const result = await translateText(inputText, model, style, relationships, glossary);
       setOutputText(result);
     } catch (err) {
       setError("An error occurred while communicating with the translation engine. Please try again.");
@@ -44,7 +45,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, style, relationships, glossary]);
+  }, [inputText, model, style, relationships, glossary]);
 
   const handleClear = () => {
     setInputText('');
@@ -191,6 +192,27 @@ const App: React.FC = () => {
         
         {/* Left: Context Controls */}
         <div className="flex items-center gap-3">
+
+          {/* Model Selector */}
+          <div className="relative">
+             <select
+                value={model}
+                onChange={(e) => setModel(e.target.value as ModelType)}
+                className="appearance-none bg-gray-50 border border-gray-200 text-brand-700 text-xs font-bold rounded-md py-1.5 pl-3 pr-8 hover:bg-gray-100 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors cursor-pointer min-w-[140px]"
+              >
+                <option value="gemini-2.5-flash">Model: Flash 2.5 ⚡</option>
+                <option value="gemini-2.5-pro">Model: Pro 2.5 🧠</option>
+                <option value="gemini-3-pro-preview">Model: Pro 3.0 🚀</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                <svg className="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+          </div>
+
+          <div className="h-4 w-px bg-gray-200 mx-1"></div>
+
           {/* Style Selector */}
           <div className="relative">
              <select
@@ -289,6 +311,16 @@ const App: React.FC = () => {
                        Import .txt
                     </button>
                  </div>
+               </div>
+
+               {/* Instruction Block */}
+               <div className="bg-brand-50/50 border border-brand-100 rounded-md p-2.5 mb-3 text-xs text-brand-800">
+                  <p className="font-semibold mb-1">How to import via .txt file:</p>
+                  <ul className="list-disc list-inside space-y-0.5 text-brand-700/80">
+                    <li>Format: <code className="bg-white px-1 py-0.5 rounded border border-brand-200 text-brand-900 font-mono text-[10px]">Subject, Relation, Target</code> (one per line)</li>
+                    <li>Example: <span className="italic">Elara, older sister, Kael</span></li>
+                    <li>Separators: Comma (,) or Pipe (|) are accepted.</li>
+                  </ul>
                </div>
 
                <div className="flex gap-2 mb-3">

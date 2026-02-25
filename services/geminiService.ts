@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
-import { TranslationStyle, Relationship, GlossaryTerm } from "../types";
+import { TranslationStyle, Relationship, GlossaryTerm, ModelType } from "../types";
 
 const apiKey = process.env.API_KEY;
 
@@ -9,6 +9,7 @@ const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export const translateText = async (
   text: string, 
+  model: ModelType,
   style: TranslationStyle = 'default',
   relationships: Relationship[] = [],
   glossary: GlossaryTerm[] = []
@@ -57,7 +58,7 @@ export const translateText = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Using the advanced model for complex text tasks
+      model: model,
       contents: finalContent,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
